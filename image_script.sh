@@ -31,6 +31,30 @@ large_quadratic_square="1000x1000"
 x_large_quadratic_square="1200x1200"
 xx_large_quadratic_square="1400x1400"
 
+# Calculate absolute difference between two aspect ratios
+calculate_difference() {
+  echo "scale=6; abs($1 - $2)" | bc
+}
+
+# Get the best geometry for the given image
+get_best_geometry() {
+  original_aspect_ratio=$1
+  candidate_geometries=$2
+  min_difference=999999
+  best_geometry=""
+
+  for candidate_geometry in $candidate_geometries; do
+    candidate_aspect_ratio=$(echo $candidate_geometry | awk -F 'x' '{ print $1/$2 }')
+    difference=$(calculate_difference $original_aspect_ratio $candidate_aspect_ratio)
+    if (( $(echo "$difference < $min_difference" | bc -l) )); then
+      min_difference=$difference
+      best_geometry=$candidate_geometry
+    fi
+  done
+
+  echo $best_geometry
+}
+
 # Define a function to process images
 process_image() {
   input_file=$1
@@ -61,70 +85,34 @@ for file in *; do
     aspect_ratio=$(identify -define png:ignore-icc -format '%[fx:w/h]' $file)
 
     # Set prefix and geometry based on aspect_ratio and size
-    if (( $(echo "$aspect_ratio > 1.1 && $aspect_ratio <= 1.9" | bc -l) )); then
-      # Horizontal rectangle (normal)
-      if [[ $width -lt 1000 && $height -lt 1000 ]]; then
-        prefix="small_horizontal_rectangle_normal"
-        geometry=$small_horizontal_rectangle_normal
-      elif [[ $width -lt 1600 && $height -lt 1600 ]]; then
-        prefix="medium_horizontal_rectangle_normal"
-        geometry=$medium_horizontal_rectangle_normal
-      elif [[ $width -lt 1920 && $height -lt 1920 ]]; then
-        prefix="large_horizontal_rectangle_normal"
-        geometry=$large_horizontal_rectangle_normal
-      elif [[ $width -lt 2240 && $height -lt 2240 ]]; then
-        prefix="x_large_horizontal_rectangle_normal"
-        geometry=$x_large_horizontal_rectangle_normal
+    prefix=""
+    geometry_candidates=""
+
+    if (( $(echo "$aspect_ratio >= 0.9 && $aspect_ratio <= 1.1" | bc -l) )); then
+      prefix="square_"
+      geometry_candidates="$small_quadratic_square $medium_quadratic_square $large_quadratic_square $x_large_quadratic_square $xx_large_quadratic_square"
+    elif (( $(echo "$aspect_ratio > 1.1" | bc -l) )); then
+      prefix="vertical_"
+      if (( $(echo "$aspect_ratio >= 1.5" | bc -l) )); then
+        geometry_candidates="$small_vertical_rectangle_narrow $medium_vertical_rectangle_narrow $large_vertical_rectangle_narrow $x_large_vertical_rectangle_narrow $xx_large_vertical_rectangle_narrow"
       else
-        prefix="xx_large_horizontal_rectangle_normal"
-        geometry=$xx_large_horizontal_rectangle_normal
-      fi
-    elif (( $(echo "$aspect_ratio > 0.9 && $aspect_ratio <= 1.1" | bc -l) )); then
-      # Quadratic square
-      if [[ $width -lt 800 ]]; then
-        prefix="small_quadratic_square"
-        geometry=$small_quadratic_square
-      elif [[ $width -lt 1000 ]]; then
-        prefix="medium_quadratic_square"
-        geometry=$medium_quadratic_square
-      elif [[ $width -lt 1200 ]]; then
-        prefix="large_quadratic_square"
-        geometry=$large_quadratic_square
-      elif [[ $width -lt 1400 ]]; then
-        prefix="x_large_quadratic_square"
-        geometry=$x_large_quadratic_square
-      else
-        prefix="xx_large_quadratic_square"
-        geometry=$xx_large_quadratic_square
+        geometry_candidates="$small_vertical_rectangle_normal $medium_vertical_rectangle_normal $large_vertical_rectangle_normal $x_large_vertical_rectangle_normal $xx_large_vertical_rectangle_normal"
       fi
     else
-      # Vertical rectangle (narrow or normal)
-      if (( $(echo "$aspect_ratio <= 0.9" | bc -l) )); then
-        prefix="vertical_rectangle_narrow"
+      prefix="horizontal_"
+      if (( $(echo "$aspect_ratio <= 0.67" | bc -l) )); then
+        geometry_candidates="$small_horizontal_rectangle_narrow $medium_horizontal_rectangle_narrow $large_horizontal_rectangle_narrow $x_large_horizontal_rectangle_narrow $xx_large_horizontal_rectangle_narrow"
       else
-        prefix="vertical_rectangle_normal"
-      fi
-      if [[ $height -lt 1000 ]]; then
-        prefix="small_$prefix"
-        geometry=$small_vertical_rectangle_narrow
-      elif [[ $height -lt 1600 ]]; then
-        prefix="medium_$prefix"
-        geometry=$medium_vertical_rectangle_narrow
-      elif [[ $height -lt 1920 ]]; then
-        prefix="large_$prefix"
-        geometry=$large_vertical_rectangle_narrow
-      elif [[ $height -lt 2240 ]]; then
-        prefix="x_large_$prefix"
-        geometry=$x_large_vertical_rectangle_narrow
-      else
-        prefix="xx_large_$prefix"
-        geometry=$xx_large_vertical_rectangle_narrow
+        geometry_candidates="$small_horizontal_rectangle_normal $medium_horizontal_rectangle_normal $large_horizontal_rectangle_normal $x_large_horizontal_rectangle_normal $xx_large_horizontal_rectangle_normal"
       fi
     fi
 
-    # Process the image with the determined prefix and geometry
-    output_file="${prefix}_$(basename $file)"
+    # Get the best geometry for the given image
+    best_geometry=$(get_best_geometry $aspect_ratio "$geometry_candidates")
+
+    # Process the image
+    output_file="${prefix}$(basename $file)"
     output_file="${output_file%.*}.webp"
-    process_image "$file" "$output_file" "$geometry"
+    process_image "$file" "$output_file" "$best_geometry"
   fi
 done
