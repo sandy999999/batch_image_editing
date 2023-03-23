@@ -1,0 +1,38 @@
+This script automatically sorts all image-files inside a folder into groups of geometric shapes, and then sets a standard size for the images in each geometric group. It makes sure the aspect ratio is kept, and crops evenly where there is a need. The images are then converted into .webp format with quality-factor of 100. It adds the name of the geometric group in which it belongs to the filename. If the image is below 500px on any side, it will only be converted into .webp and renamed with "too_small".
+
+Each group and sizes:
+Large images:
+horizontal_rectangle_standard="1600x1000"
+vertical_rectangle_standard="1000x1600"
+horizontal_rectangle_narrow="2000x1000"
+vertical_rectangle_narrow="1000x2000"
+quadratic="1000x1000"
+large_rectangle_standard="1920x1080"
+large_rectangle_narrow="2400x1000"
+
+Small images:
+horizontal_rectangle_standard_small="800x500" 
+vertical_rectangle_standard_small="500x800" 
+horizontal_rectangle_narrow_small="1000x500" 
+vertical_rectangle_narrow_small="500x1000" 
+quadratic_small="500x500"
+
+What to do:
+Install:
+- https://brew.sh/
+- https://ffmpeg.org/
+- https://imagemagick.org/
+- Download "image_script.sh" from here and place it in the folder with images.
+
+Terminal commands:
+1. Copy the folderpath, write "cd" in the terminal and paste the path to the terminal
+
+cd /user/folder_with_images
+
+2. Make the script executable with this command
+
+chmod +x image_script.sh
+
+3. Run the script -> voilá
+
+./image_script.sh
