@@ -1,19 +1,35 @@
 #!/bin/zsh
 
 # Define the desired sizes for each geometric group
-large_horizontal_rectangle_standard="1600x1000"
-large_vertical_rectangle_standard="1000x1600"
-large_horizontal_rectangle_narrow="2000x1000"
-large_vertical_rectangle_narrow="1000x2000"
-large_quadratic="1000x1000"
-large_rectangle_standard="1920x1080"
-large_rectangle_narrow="2400x1000"
+small_vertical_rectangle_normal="500x800"
+medium_vertical_rectangle_normal="800x1280"
+large_vertical_rectangle_normal="1000x1600"
+x_large_vertical_rectangle_normal="1200x1920"
+xx_large_vertical_rectangle_normal="1400x2240"
 
-small_horizontal_rectangle_standard="800x500"
-small_vertical_rectangle_standard="500x800"
-small_horizontal_rectangle_narrow="1000x500"
+small_horizontal_rectangle_normal="800x500"
+medium_horizontal_rectangle_normal="1280x800"
+large_horizontal_rectangle_normal="1600x1000"
+x_large_horizontal_rectangle_normal="1920x1200"
+xx_large_horizontal_rectangle_normal="2240x1400"
+
 small_vertical_rectangle_narrow="500x1000"
-small_quadratic="500x500"
+medium_vertical_rectangle_narrow="800x1600"
+large_vertical_rectangle_narrow="1000x2000"
+x_large_vertical_rectangle_narrow="1200x2400"
+xx_large_vertical_rectangle_narrow="1400x2800"
+
+small_horizontal_rectangle_narrow="1000x500"
+medium_horizontal_rectangle_narrow="1600x800"
+large_horizontal_rectangle_narrow="2000x1000"
+x_large_horizontal_rectangle_narrow="2400x1200"
+xx_large_horizontal_rectangle_narrow="2800x1400"
+
+small_quadratic_square="500x500"
+medium_quadratic_square="800x800"
+large_quadratic_square="1000x1000"
+x_large_quadratic_square="1200x1200"
+xx_large_quadratic_square="1400x1400"
 
 # Define a function to process images
 process_image() {
@@ -44,41 +60,71 @@ for file in *; do
 
     aspect_ratio=$(identify -define png:ignore-icc -format '%[fx:w/h]' $file)
 
-    # Update the aspect ratio conditions based on your requirements
+    # Set prefix and geometry based on aspect_ratio and size
     if (( $(echo "$aspect_ratio > 1.1 && $aspect_ratio <= 1.9" | bc -l) )); then
-      # Horizontal rectangle
-      if [[ $width -lt 1000 || $height -lt 1000 ]]; then
-        prefix="small_horizontal_rectangle_standard"
-        geometry=$small_horizontal_rectangle_standard
+      # Horizontal rectangle (normal)
+      if [[ $width -lt 1000 && $height -lt 1000 ]]; then
+        prefix="small_horizontal_rectangle_normal"
+        geometry=$small_horizontal_rectangle_normal
+      elif [[ $width -lt 1600 && $height -lt 1600 ]]; then
+        prefix="medium_horizontal_rectangle_normal"
+        geometry=$medium_horizontal_rectangle_normal
+      elif [[ $width -lt 1920 && $height -lt 1920 ]]; then
+        prefix="large_horizontal_rectangle_normal"
+        geometry=$large_horizontal_rectangle_normal
+      elif [[ $width -lt 2240 && $height -lt 2240 ]]; then
+        prefix="x_large_horizontal_rectangle_normal"
+        geometry=$x_large_horizontal_rectangle_normal
       else
-        prefix="large_horizontal_rectangle_standard"
-        geometry=$large_horizontal_rectangle_standard
+        prefix="xx_large_horizontal_rectangle_normal"
+        geometry=$xx_large_horizontal_rectangle_normal
       fi
-    elif (( $(echo "$aspect_ratio >= 0.5 && $aspect_ratio <= 0.9" | bc -l) )); then
-      # Vertical rectangle
-      if [[ $width -lt 1000 || $height -lt 1000 ]]; then
-        prefix="small_vertical_rectangle_standard"
-        geometry=$small_vertical_rectangle_standard
+    elif (( $(echo "$aspect_ratio > 0.9 && $aspect_ratio <= 1.1" | bc -l) )); then
+      # Quadratic square
+      if [[ $width -lt 800 ]]; then
+        prefix="small_quadratic_square"
+        geometry=$small_quadratic_square
+      elif [[ $width -lt 1000 ]]; then
+        prefix="medium_quadratic_square"
+        geometry=$medium_quadratic_square
+      elif [[ $width -lt 1200 ]]; then
+        prefix="large_quadratic_square"
+        geometry=$large_quadratic_square
+      elif [[ $width -lt 1400 ]]; then
+        prefix="x_large_quadratic_square"
+        geometry=$x_large_quadratic_square
       else
-        prefix="large_vertical_rectangle_standard"
-        geometry=$large_vertical_rectangle_standard
+        prefix="xx_large_quadratic_square"
+        geometry=$xx_large_quadratic_square
       fi
     else
-      # Default case: Quadratic
-      if [[ $width -lt 1000 || $height -lt 1000 ]]; then
-        prefix="small_quadratic"
-        geometry=$small_quadratic
+      # Vertical rectangle (narrow or normal)
+      if (( $(echo "$aspect_ratio <= 0.9" | bc -l) )); then
+        prefix="vertical_rectangle_narrow"
       else
-        prefix="large_quadratic"
-        geometry=$large_quadratic
+        prefix="vertical_rectangle_normal"
+      fi
+      if [[ $height -lt 1000 ]]; then
+        prefix="small_$prefix"
+        geometry=$small_vertical_rectangle_narrow
+      elif [[ $height -lt 1600 ]]; then
+        prefix="medium_$prefix"
+        geometry=$medium_vertical_rectangle_narrow
+      elif [[ $height -lt 1920 ]]; then
+        prefix="large_$prefix"
+        geometry=$large_vertical_rectangle_narrow
+      elif [[ $height -lt 2240 ]]; then
+        prefix="x_large_$prefix"
+        geometry=$x_large_vertical_rectangle_narrow
+      else
+        prefix="xx_large_$prefix"
+        geometry=$xx_large_vertical_rectangle_narrow
       fi
     fi
 
-    # Set the output filename
+    # Process the image with the determined prefix and geometry
     output_file="${prefix}_$(basename $file)"
     output_file="${output_file%.*}.webp"
-
-    # Process the image
     process_image "$file" "$output_file" "$geometry"
   fi
 done
